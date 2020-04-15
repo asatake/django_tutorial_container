@@ -1,0 +1,40 @@
+version: '3.5'
+services:
+  postgres:
+    container_name: postgres
+    image: postgres
+    expose:
+      - '5432'
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: ''
+      POSTGRES_DB: 'django_p'
+    restart: always
+    user: postgres
+  app:
+    container_name: app
+    build:
+      context: .
+      dockerfile: ./Dockerfile.app
+    tty: true
+    volumes:
+      - ./app/mysite:/srv/app/mysite
+    expose:
+      - '8099'
+    command: uwsgi --ini /srv/app/mysite/django.ini
+    environment:
+      - PYTHONUNBUFFERED=0
+    depends_on:
+      - postgres
+    links:
+      - postgres
+  web:
+    container_name: web
+    image: nginx:1.13
+    ports:
+      - '8090:8090'
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/uwsgi_params:/etc/nginx/uwsgi_params
+    depends_on:
+      - app
